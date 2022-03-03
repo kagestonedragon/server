@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package dev.service;
+
+import "lenvendo/api/service/levels.proto";
+import "google/protobuf/descriptor.proto";
+
+option go_package = "git.repo.services.lenvendo.ru/grade-factor/api/service";
+
+extend google.protobuf.ServiceOptions {
+  Levels levels = 898132;
+}

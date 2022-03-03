@@ -1,0 +1,51 @@
+syntax = "proto3";
+package echopb;
+option go_package = "internal/echopb";
+
+message Echo {
+  uint32 id = 1;
+  string title = 2;
+  string reminder = 3;
+}
+
+message PostEchoRequest {
+  Echo echo = 1;
+}
+
+message PostEchoResponse {
+  Echo echo = 1;
+  string err = 2;
+}
+
+message GetEchoListRequest {}
+
+message GetEchoListResponse {
+  repeated Echo echos = 1;
+  string err = 2;
+}
+
+message GetEchoByIDRequest {
+  uint32 id = 1;
+}
+
+message GetEchoByIDResponse {
+  Echo echo = 1;
+  string err = 2;
+}
+
+message PutEchoRequest {
+  Echo echo = 1;
+}
+
+message PutEchoResponse {
+  Echo echo = 1;
+  string err = 2;
+}
+
+message DeleteEchoRequest {
+  uint32 id = 1;
+}
+
+message DeleteEchoResponse {
+  string err = 1;
+}

@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package dev.service;
+import "google/protobuf/struct.proto";
+
+option go_package = "git.repo.services.lenvendo.ru/grade-factor/api/service";
+
+message Levels {
+  Enabled http = 1;
+  Enabled grpc = 2;
+  Enabled logging = 3;
+  Enabled metric = 4;
+  Enabled sentry = 5;
+  Enabled tracing = 6;
+  Enabled queue = 7;
+}
+
+message Enabled {
+  oneof kind {
+    google.protobuf.NullValue null = 1;
+    bool enabled = 2;
+  }
+}

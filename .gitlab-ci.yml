@@ -1,0 +1,128 @@
+image: golang:latest
+
+variables:
+  REPO_NAME: $CI_PROJECT_NAME
+  CHART_MUSEUM: $K8S_SECRET_CHART_MUSEUM
+
+before_script:
+  - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
+  - ln -svf $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME
+  - cd $GOPATH/src/$REPO_NAME
+
+stages:
+  - fmt
+  - test
+  - build
+  - docker-build
+  - migrate-dev
+  - deploy-dev
+
+fmt:
+  stage: fmt
+  script:
+    - if [[ -n $(gofmt -l ./|grep -v vendor) ]]; then echo "Необходимо отформтаировать код при помощи gofmt" && exit 1; fi
+  only:
+    changes:
+      - "**/*.go"
+
+test:
+  stage: test
+  script:
+    - GO111MODULE=off go get github.com/boumenot/gocover-cobertura
+    - GOSUMDB=off go test -coverprofile=coverage.txt -count=1 -v -race -timeout=30s -tags=unit ./...
+    - gocover-cobertura < coverage.txt > coverage.xml
+  only:
+    changes:
+      - "**/*.go"
+  artifacts:
+    reports:
+      cobertura: coverage.xml
+
+lint:
+  image: golangci/golangci-lint:v1.41.1-alpine
+  stage: test
+  script:
+    - golangci-lint run --timeout 10m --issues-exit-code 0 --out-format code-climate | tee gl-code-quality-report.json
+  only:
+    changes:
+      - "**/*.go"
+  allow_failure: true
+  artifacts:
+    reports:
+      codequality: gl-code-quality-report.json
+    paths:
+      - gl-code-quality-report.json
+
+build:
+  stage: build
+  allow_failure: false
+  script:
+    - if [[ -n $( make -s build ) ]]; then echo "Проект не собирается" && exit 1; fi
+  only:
+    changes:
+      - "**/*.go"
+
+docker-build:
+  image: docker:latest
+  stage: docker-build
+  allow_failure: false
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+  script:
+    - docker rmi --force "$CI_REGISTRY_IMAGE:latest"
+    - if [[ -n $( docker build --pull -t "$CI_REGISTRY_IMAGE:latest" . --no-cache ) ]]; then echo "Не собирается докер контейнер" && exit 1; fi
+    - if [[ -n $( docker push "$CI_REGISTRY_IMAGE:latest" ) ]]; then echo "Не удалось отправить контейнер в container-registry" && exit 1; fi
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'master'
+      when: always
+
+migrate-dev:
+  stage: migrate-dev
+  allow_failure: false
+  image: alpine/helm:3.2.1
+  before_script:
+    - apk add wget
+    - cd /tmp && wget -O migrate.linux-amd64.tar.gz https://github.com/golang-migrate/migrate/releases/download/v4.15.0/migrate.linux-amd64.tar.gz
+    - cd  /tmp && ls && tar -xzf migrate.linux-amd64.tar.gz && chmod +x /tmp/migrate
+  script:
+    - /tmp/migrate -source file://$(find / -type d -name "migrations") -database "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DATABASE_NAME}?sslmode=disable" up
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'master'
+      when: always
+
+deploy-dev:
+  stage: deploy-dev
+  image: alpine/helm:3.2.1
+  allow_failure: false
+  before_script:
+    - apk add --no-cache curl
+    - curl -LO https://storage.googleapis.com/kubernetes-release/release/$(curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt)/bin/linux/amd64/kubectl
+    - chmod +x ./kubectl
+    - env=$( echo
+      --set nodeSelector."node-role\.kubernetes\.io/worker"=${K8S_SECRET_WORKER_NODE_NAME}
+      --set app.postgresql.master.host=${POSTGRES_HOST}
+      --set app.postgresql.master.port=${POSTGRES_PORT}
+      --set app.postgresql.master.user=${POSTGRES_USER}
+      --set app.postgresql.master.password=${POSTGRES_PASSWORD}
+      --set app.postgresql.master.databaseName=${POSTGRES_DATABASE_NAME}
+      --set app.postgresql.replica.host=${POSTGRES_HOST}
+      --set app.postgresql.replica.port=${POSTGRES_PORT}
+      --set app.postgresql.replica.user=${POSTGRES_USER}
+      --set app.postgresql.replica.password=${POSTGRES_PASSWORD}
+      --set app.postgresql.replica.databaseName=${POSTGRES_DATABASE_NAME}
+      )
+  script:
+    - helm repo add chart $CHART_MUSEUM
+    - helm repo update
+    - export DEPLOYS=$(helm ls --namespace=${REPO_NAME} | grep ${REPO_NAME} | wc -l)
+    - if [ ${DEPLOYS}  -eq 0 ]; then
+         helm install ${REPO_NAME}  chart/${REPO_NAME} --namespace=${REPO_NAME} $env;
+      else
+        helm upgrade ${REPO_NAME} chart/${REPO_NAME} --namespace=${REPO_NAME} $env;
+      fi
+    - ./kubectl rollout restart deployment ${REPO_NAME} -n ${REPO_NAME}
+  rules:
+    - if: $CI_COMMIT_BRANCH == 'master'
+      when: always
