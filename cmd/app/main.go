@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"git.repo.services.lenvendo.ru/grade-factor/echo/configs"
+	e "git.repo.services.lenvendo.ru/grade-factor/echo/internal/repository/echo"
 	"git.repo.services.lenvendo.ru/grade-factor/echo/internal/server"
 	"git.repo.services.lenvendo.ru/grade-factor/echo/pkg/echo"
 	"git.repo.services.lenvendo.ru/grade-factor/echo/pkg/health"
@@ -15,7 +16,6 @@ import (
 	"net/http"
 	"os"
 )
-
 
 func main() {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -60,43 +60,49 @@ func main() {
 	if cfg.Metrics.Enabled {
 		ctx = metrics.WithContext(ctx)
 	}
-	healthService := initHealthService(ctx, cfg)
-	echoService := initEchoService(ctx, cfg)
-	s, err := server.NewServer(
-		server.SetConfig(cfg),
-		server.SetLogger(logger),
-		server.SetHandler(
-			map[string]http.Handler{
-				"":        health.MakeHTTPHandler(ctx, healthService),
-			}),
-		server.SetGRPC(
-			health.JoinGRPC(ctx, healthService),
-			echo.JoinGRPC(ctx, echoService),
-		),
-	)
-	if err != nil {
-		level.Error(logger).Log("init", "server", "err", err)
-		os.Exit(1)
-	}
-	defer s.Close()
 
-	if err := s.AddHTTP(); err != nil {
-		level.Error(logger).Log("err", err)
-		os.Exit(1)
+	echoRepository := e.NewEcho()
+	{
+		healthService := initHealthService(ctx, cfg)
+		echoService := initEchoService(ctx, cfg, echoRepository)
+		s, err := server.NewServer(
+			server.SetConfig(cfg),
+			server.SetLogger(logger),
+			server.SetHandler(
+				map[string]http.Handler{
+					"": health.MakeHTTPHandler(ctx, healthService),
+				}),
+			server.SetGRPC(
+				health.JoinGRPC(ctx, healthService),
+				echo.JoinGRPC(ctx, echoService),
+			),
+		)
+		if err != nil {
+			level.Error(logger).Log("init", "server", "err", err)
+			os.Exit(1)
+		}
+		defer s.Close()
+
+		if err := s.AddHTTP(); err != nil {
+			level.Error(logger).Log("err", err)
+			os.Exit(1)
+		}
+
+		if err = s.AddGRPC(); err != nil {
+			level.Error(logger).Log("err", err)
+			os.Exit(1)
+		}
+
+		if err = s.AddMetrics(); err != nil {
+			level.Error(logger).Log("err", err)
+			os.Exit(1)
+		}
+
+		s.AddSignalHandler()
+		s.Run()
+
 	}
 
-	if err = s.AddGRPC(); err != nil {
-		level.Error(logger).Log("err", err)
-		os.Exit(1)
-	}
-
-	if err = s.AddMetrics(); err != nil {
-		level.Error(logger).Log("err", err)
-		os.Exit(1)
-	}
-
-	s.AddSignalHandler()
-	s.Run()
 }
 
 func initHealthService(ctx context.Context, cfg *configs.Config) health.Service {
@@ -112,9 +118,8 @@ func initHealthService(ctx context.Context, cfg *configs.Config) health.Service 
 	return healthService
 }
 
-func initEchoService(_ context.Context, cfg *configs.Config) echo.Service {
-	echoService := echo.NewEchoService()
-
+func initEchoService(_ context.Context, cfg *configs.Config, repo e.Echo) echo.Service {
+	echoService := echo.NewEchoService(repo)
 	if cfg.Sentry.Enabled {
 		echoService = echo.NewSentryService(echoService)
 	}
