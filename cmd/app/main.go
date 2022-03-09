@@ -6,6 +6,7 @@ import (
 	"git.repo.services.lenvendo.ru/grade-factor/echo/configs"
 	e "git.repo.services.lenvendo.ru/grade-factor/echo/internal/repository/echo"
 	"git.repo.services.lenvendo.ru/grade-factor/echo/internal/server"
+	"git.repo.services.lenvendo.ru/grade-factor/echo/internal/user"
 	"git.repo.services.lenvendo.ru/grade-factor/echo/pkg/echo"
 	"git.repo.services.lenvendo.ru/grade-factor/echo/pkg/health"
 	"git.repo.services.lenvendo.ru/grade-factor/echo/tools/logging"
@@ -100,9 +101,18 @@ func main() {
 
 		s.AddSignalHandler()
 		s.Run()
-
 	}
 
+	userRepository := user.NewRepository()
+
+	currentUser, err := userRepository.Get(0)
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s", err)
+		os.Exit(1)
+	}
+
+	fmt.Fprintf(os.Stdout, "user with id %d", currentUser.Id)
 }
 
 func initHealthService(ctx context.Context, cfg *configs.Config) health.Service {
