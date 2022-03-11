@@ -23,10 +23,10 @@ func (c *connection) GetConstraintName(ctx context.Context, tableName string, co
 	}
 
 	if conn, err := c.GetMasterConn(ctx); err != nil {
-		return
+		return "", nil
 	} else {
 		constraintName = ""
 		err = conn.QueryRow(ctx, SQL, tableName, columnNames, len(columnNames)).Scan(&constraintName)
 	}
-	return
+	return "", nil
 }

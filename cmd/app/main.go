@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"git.repo.services.lenvendo.ru/grade-factor/echo/configs"
+	"git.repo.services.lenvendo.ru/grade-factor/echo/internal/db/postgres"
 	e "git.repo.services.lenvendo.ru/grade-factor/echo/internal/repository/echo"
 	"git.repo.services.lenvendo.ru/grade-factor/echo/internal/server"
 	"git.repo.services.lenvendo.ru/grade-factor/echo/internal/user"
@@ -99,20 +100,30 @@ func main() {
 			os.Exit(1)
 		}
 
+		connection, err := postgres.NewConnection(ctx, cfg)
+
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "%s", err)
+			os.Exit(1)
+		}
+
+		userRepository := user.NewRepository(connection)
+
+		testUser := &user.User{
+			Id:     2,
+			Name:   "andrew_2",
+			Active: true,
+		}
+
+		userRepository.
+
+		if err := userRepository.Add(ctx, testUser); err != nil {
+			fmt.Fprintf(os.Stderr, "%s", err)
+		}
+
 		s.AddSignalHandler()
 		s.Run()
 	}
-
-	userRepository := user.NewRepository()
-
-	currentUser, err := userRepository.Get(0)
-
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s", err)
-		os.Exit(1)
-	}
-
-	fmt.Fprintf(os.Stdout, "user with id %d", currentUser.Id)
 }
 
 func initHealthService(ctx context.Context, cfg *configs.Config) health.Service {
