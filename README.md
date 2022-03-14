@@ -76,3 +76,22 @@ $ migrate create -ext SQL -dir ./migrations create_echo_table
 ```
 $ migrate -source file://migrations -database "postgres://postgres:postgres@localhost:5432/echo?sslmode=disable" up/down
 ```
+
+Запуск
+
+```
+postgres://user:password@localhost:5432/echo?sslmode=disable
+./cmd/app/app \
+--postgres.master.host="127.0.0.1" \
+--postgres.master.port=5432 \
+--postgres.master.user=user \
+--postgres.master.password=password \
+--postgres.master.database_name=echo \
+--postgres.master.secure=disable \
+--postgres.replica.host="127.0.0.1" \
+--postgres.replica.port=5432 \
+--postgres.replica.user=user \
+--postgres.replica.password=password \
+--postgres.replica.database_name=echo \
+--postgres.replica.secure=disable
+```

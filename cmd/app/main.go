@@ -107,17 +107,26 @@ func main() {
 			os.Exit(1)
 		}
 
-		userRepository := user.NewRepository(connection)
+		combinedRepository := user.NewCombinedRepository(connection)
 
-		testUser := &user.User{
-			Id:     2,
-			Name:   "andrew_2",
+		testUser := user.User{
+			Name:   "andrew_3",
 			Active: true,
 		}
 
-		userRepository.
+		if err := combinedRepository.Add(ctx, &testUser); err != nil {
+			fmt.Fprintf(os.Stderr, "%s", err)
+		}
 
-		if err := userRepository.Add(ctx, testUser); err != nil {
+		fmt.Fprintf(os.Stdin, "id is %d\n", testUser.Id)
+
+		if userGetted, err := combinedRepository.GetById(ctx, 5); err == nil {
+			fmt.Fprintf(os.Stdin, "id is %d, name is %s", userGetted.Id, userGetted.Name)
+		} else {
+			fmt.Fprintf(os.Stderr, "%s", err)
+		}
+
+		if err := combinedRepository.DeleteById(ctx, 5); err != nil {
 			fmt.Fprintf(os.Stderr, "%s", err)
 		}
 
