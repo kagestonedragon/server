@@ -93,6 +93,8 @@ func (pg *pgRepository) GetById(ctx context.Context, id uint64) (User, error) {
 	return user, nil
 }
 
+// убрать переопредление переменных
+// протестить
 func (pg *pgRepository) GetList(ctx context.Context) ([]User, error) {
 	conn, err := pg.conn.GetReplicaConn(ctx)
 

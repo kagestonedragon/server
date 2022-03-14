@@ -18,6 +18,7 @@ func NewCombinedRepository(conn postgres.Connection) Repository {
 	}
 }
 
+// убрать переопредление переменных
 func (c *CombinedRepository) Add(ctx context.Context, user User) (User, error) {
 	if user, err := c.postgres.Add(ctx, user); err != nil {
 		return user, errors.Wrap(err, "add user to database")
@@ -54,6 +55,7 @@ func (c *CombinedRepository) DeleteById(ctx context.Context, id uint64) error {
 	return nil
 }
 
+// убрать переопредление переменных
 func (c *CombinedRepository) GetById(ctx context.Context, id uint64) (User, error) {
 	if user, err := c.cache.GetById(ctx, id); err == nil {
 		return user, nil
