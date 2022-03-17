@@ -4,11 +4,11 @@ go 1.16
 
 require (
 	git.repo.services.lenvendo.ru/grade-factor/api v0.0.0-20210908140242-deef8c82050b
-	github.com/bxcodec/faker v2.0.1+incompatible
+	github.com/bxcodec/faker v2.0.1+incompatible // indirect
 	github.com/getsentry/sentry-go v0.11.0
 	github.com/go-kit/kit v0.12.0
 	github.com/golang/mock v1.6.0
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/schema v1.2.0
 	github.com/jackc/pgx/v4 v4.14.1

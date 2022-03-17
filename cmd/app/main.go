@@ -7,9 +7,10 @@ import (
 	"git.repo.services.lenvendo.ru/grade-factor/echo/internal/db/postgres"
 	e "git.repo.services.lenvendo.ru/grade-factor/echo/internal/repository/echo"
 	"git.repo.services.lenvendo.ru/grade-factor/echo/internal/server"
-	"git.repo.services.lenvendo.ru/grade-factor/echo/internal/user"
+	u "git.repo.services.lenvendo.ru/grade-factor/echo/internal/user"
 	"git.repo.services.lenvendo.ru/grade-factor/echo/pkg/echo"
 	"git.repo.services.lenvendo.ru/grade-factor/echo/pkg/health"
+	"git.repo.services.lenvendo.ru/grade-factor/echo/pkg/user"
 	"git.repo.services.lenvendo.ru/grade-factor/echo/tools/logging"
 	"git.repo.services.lenvendo.ru/grade-factor/echo/tools/metrics"
 	"git.repo.services.lenvendo.ru/grade-factor/echo/tools/sentry"
@@ -17,6 +18,7 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"net/http"
 	"os"
+	"time"
 )
 
 func main() {
@@ -63,20 +65,39 @@ func main() {
 		ctx = metrics.WithContext(ctx)
 	}
 
+	conn, err := postgres.NewConnection(ctx, cfg)
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s", err)
+		os.Exit(1)
+	}
+
 	echoRepository := e.NewEcho()
+	userRepository, err := u.NewCacheableRepository(
+		ctx,
+		u.NewPostgreSqlRepository(conn),
+		time.Duration(cfg.Cache.Lifetime)*time.Second,
+	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s", err)
+		os.Exit(1)
+	}
 	{
 		healthService := initHealthService(ctx, cfg)
 		echoService := initEchoService(ctx, cfg, echoRepository)
+		userService := initUserService(ctx, cfg, userRepository)
 		s, err := server.NewServer(
 			server.SetConfig(cfg),
 			server.SetLogger(logger),
 			server.SetHandler(
 				map[string]http.Handler{
-					"": health.MakeHTTPHandler(ctx, healthService),
+					"":     health.MakeHTTPHandler(ctx, healthService),
+					"user": user.MakeHTTPHandler(ctx, userService),
 				}),
 			server.SetGRPC(
 				health.JoinGRPC(ctx, healthService),
 				echo.JoinGRPC(ctx, echoService),
+				user.JoinGRPC(ctx, userService),
 			),
 		)
 		if err != nil {
@@ -98,36 +119,6 @@ func main() {
 		if err = s.AddMetrics(); err != nil {
 			level.Error(logger).Log("err", err)
 			os.Exit(1)
-		}
-
-		connection, err := postgres.NewConnection(ctx, cfg)
-
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s", err)
-			os.Exit(1)
-		}
-
-		combinedRepository := user.NewCombinedRepository(connection)
-
-		testUser := user.User{
-			Name:   "andrew_3",
-			Active: true,
-		}
-
-		if err := combinedRepository.Add(ctx, &testUser); err != nil {
-			fmt.Fprintf(os.Stderr, "%s", err)
-		}
-
-		fmt.Fprintf(os.Stdin, "id is %d\n", testUser.Id)
-
-		if userGetted, err := combinedRepository.GetById(ctx, 5); err == nil {
-			fmt.Fprintf(os.Stdin, "id is %d, name is %s", userGetted.Id, userGetted.Name)
-		} else {
-			fmt.Fprintf(os.Stderr, "%s", err)
-		}
-
-		if err := combinedRepository.DeleteById(ctx, 5); err != nil {
-			fmt.Fprintf(os.Stderr, "%s", err)
 		}
 
 		s.AddSignalHandler()
@@ -154,4 +145,8 @@ func initEchoService(_ context.Context, cfg *configs.Config, repo e.Echo) echo.S
 		echoService = echo.NewSentryService(echoService)
 	}
 	return echoService
+}
+
+func initUserService(_ context.Context, _ *configs.Config, r u.CacheableRepository) user.Service {
+	return user.NewUserService(r)
 }

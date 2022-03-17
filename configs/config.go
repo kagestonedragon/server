@@ -4,12 +4,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"os"
-	"strings"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"os"
+	"strings"
 )
 
 const ServiceName = "todo"
@@ -55,6 +54,8 @@ var options = []option{
 	{"postgres.replica.database_name", "string", "", "postgres master database name"},
 	{"postgres.replica.secure", "string", "disable", "postgres master SSL support"},
 	{"postgres.replica.max_conns_pool", "int", 150, "max number of connections pool postgres"},
+
+	{"cache.lifetime", "int", 60, "lifetime of repository cache (in seconds)"},
 }
 
 type Config struct {
@@ -94,6 +95,9 @@ type Config struct {
 	Postgres struct {
 		Master  Database
 		Replica Database
+	}
+	Cache struct {
+		Lifetime int
 	}
 }
 

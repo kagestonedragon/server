@@ -3,5 +3,7 @@ package user
 import "context"
 
 type cache interface {
-	Reset(ctx context.Context) error
+	Repository
+
+	Reset(ctx context.Context, users []*User) error
 }

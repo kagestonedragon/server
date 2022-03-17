@@ -8,49 +8,46 @@ import (
 
 const (
 	AddUserSqlTemplate        = `insert into "user"."users" ("name", "is_active") values ($1, $2) returning "id"`
-	UpdateUserSqlTemplate     = `update "user"."users" set "name"=$1, "active"=$2 where "id"=$3`
+	UpdateUserSqlTemplate     = `update "user"."users" set "name"=$1, "is_active"=$2 where "id"=$3`
 	DeleteUserByIdSqlTemplate = `delete from "user"."users" where "id"=$1`
 	GetUserByIdSqlTemplate    = `select * from "user"."users" where "id"=$1`
 	GetUsersSqlTemplate       = `select * from "user"."users"`
 )
 
-type pgRepository struct {
+type postgreSqlRepository struct {
 	conn postgres.Connection
 }
 
-func initPgRepository(conn postgres.Connection) Repository {
-	return &pgRepository{
+func NewPostgreSqlRepository(conn postgres.Connection) Repository {
+	return &postgreSqlRepository{
 		conn: conn,
 	}
 }
 
-func (pg *pgRepository) Add(ctx context.Context, user User) (User, error) {
-	conn, err := pg.conn.GetMasterConn(ctx)
-
-	defer conn.Release()
-
-	if err != nil {
-		return user, errors.Wrap(err, "get master connection")
-	}
-
-	err = conn.QueryRow(ctx, AddUserSqlTemplate, user.Name, user.Active).Scan(&user.Id)
-	if err != nil {
-		return user, errors.Wrap(err, "add user to database")
-	}
-
-	return user, nil
-}
-
-func (pg *pgRepository) Update(ctx context.Context, user User) error {
-	conn, err := pg.conn.GetMasterConn(ctx)
-
-	defer conn.Release()
-
+func (p *postgreSqlRepository) Add(ctx context.Context, u *User) error {
+	conn, err := p.conn.GetMasterConn(ctx)
 	if err != nil {
 		return errors.Wrap(err, "get master connection")
 	}
 
-	_, err = conn.Exec(ctx, UpdateUserSqlTemplate, user.Name, user.Active)
+	defer conn.Release()
+
+	if err = conn.QueryRow(ctx, AddUserSqlTemplate, u.Name, u.Active).Scan(&u.Id); err != nil {
+		return errors.Wrap(err, "add user to database")
+	}
+
+	return nil
+}
+
+func (p *postgreSqlRepository) Update(ctx context.Context, u *User) error {
+	conn, err := p.conn.GetMasterConn(ctx)
+	if err != nil {
+		return errors.Wrap(err, "get master connection")
+	}
+
+	defer conn.Release()
+
+	_, err = conn.Exec(ctx, UpdateUserSqlTemplate, u.Name, u.Active, u.Id)
 	if err != nil {
 		return errors.Wrap(err, "update user in database")
 	}
@@ -58,14 +55,13 @@ func (pg *pgRepository) Update(ctx context.Context, user User) error {
 	return nil
 }
 
-func (pg *pgRepository) DeleteById(ctx context.Context, id uint64) error {
-	conn, err := pg.conn.GetMasterConn(ctx)
+func (p *postgreSqlRepository) DeleteById(ctx context.Context, id uint64) error {
+	conn, err := p.conn.GetMasterConn(ctx)
+	if err != nil {
+		return errors.Wrap(err, "get master connection")
+	}
 
 	defer conn.Release()
-
-	if err != nil {
-		return errors.Wrap(err, "get replica connection")
-	}
 
 	if _, err = conn.Exec(ctx, DeleteUserByIdSqlTemplate, id); err != nil {
 		return errors.Wrap(err, "delete user from database")
@@ -74,45 +70,44 @@ func (pg *pgRepository) DeleteById(ctx context.Context, id uint64) error {
 	return nil
 }
 
-func (pg *pgRepository) GetById(ctx context.Context, id uint64) (User, error) {
-	conn, err := pg.conn.GetReplicaConn(ctx)
+func (p *postgreSqlRepository) GetById(ctx context.Context, id uint64) (*User, error) {
+	conn, err := p.conn.GetMasterConn(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "get master connection")
+	}
 
 	defer conn.Release()
 
-	user := User{}
+	u := &User{}
 
+	err = conn.QueryRow(ctx, GetUserByIdSqlTemplate, id).Scan(&u.Id, &u.Name, &u.Active)
 	if err != nil {
-		return user, errors.Wrap(err, "get replica connection")
+		return nil, errors.Wrap(err, "get user from database")
 	}
 
-	err = conn.QueryRow(ctx, GetUserByIdSqlTemplate, id).Scan(&user.Id, &user.Name, &user.Active)
-	if err != nil {
-		return user, errors.Wrap(err, "get user from database")
-	}
-
-	return user, nil
+	return u, nil
 }
 
-// убрать переопредление переменных
-// протестить
-func (pg *pgRepository) GetList(ctx context.Context) ([]User, error) {
-	conn, err := pg.conn.GetReplicaConn(ctx)
+func (p *postgreSqlRepository) GetList(ctx context.Context) ([]*User, error) {
+	conn, err := p.conn.GetMasterConn(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "get master connection")
+	}
 
 	defer conn.Release()
 
-	users := make([]User, 0)
-
-	if err != nil {
-		return users, errors.Wrap(err, "get replica connection")
-	}
+	users := make([]*User, 0)
 
 	res, err := conn.Query(ctx, GetUsersSqlTemplate)
+	if err != nil {
+		return nil, errors.Wrap(err, "get users from database")
+	}
 
 	for res.Next() {
-		user := User{}
+		user := &User{}
 
 		if err := res.Scan(&user.Id, &user.Name, &user.Active); err != nil {
-			return users, errors.Wrap(err, "scan error")
+			return nil, errors.Wrap(err, "get users from database on fetch")
 		}
 
 		users = append(users, user)
@@ -121,6 +116,6 @@ func (pg *pgRepository) GetList(ctx context.Context) ([]User, error) {
 	return users, nil
 }
 
-func (pg *pgRepository) Reset(ctx context.Context) error {
-	return errors.New("cannot reset")
+func (p *postgreSqlRepository) Reset(ctx context.Context) error {
+	return nil
 }

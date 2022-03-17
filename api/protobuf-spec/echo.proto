@@ -49,3 +49,44 @@ message DeleteEchoRequest {
 message DeleteEchoResponse {
   string err = 1;
 }
+
+message User {
+  uint64 id = 1;
+  string name = 2;
+  bool active = 3;
+}
+
+// AddUser
+message AddUserRequest {
+  string name = 1;
+  bool active = 2;
+}
+
+// UpdateUser
+message UpdateUserRequest {
+}
+
+message UpdateUserResponse {
+}
+
+// DeleteUser
+message DeleteUserByIdRequest {
+  uint64 id = 1;
+}
+
+message DeleteUserByIdResponse {
+}
+
+// GetUser
+message GetUserByIdRequest {
+  uint64 id = 1;
+}
+
+// GetUserList
+message GetUserListRequest {
+}
+
+message GetUserListResponse {
+  repeated User users = 1;
+}
+

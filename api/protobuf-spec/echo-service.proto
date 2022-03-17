@@ -44,3 +44,36 @@ service EchoService {
         };
     }
 }
+
+
+service UserService {
+    rpc AddUser(AddUserRequest) returns (User) {
+        option (google.api.http) = {
+            post: "/user"
+        };
+    }
+
+    rpc UpdateUser(User) returns (UpdateUserResponse) {
+        option (google.api.http) = {
+            put: "/user/{id}"
+        };
+    }
+
+    rpc DeleteUserById(DeleteUserByIdRequest) returns (DeleteUserByIdResponse) {
+        option (google.api.http) = {
+            delete: "/user/{id}"
+        };
+    }
+
+    rpc GetUserById(GetUserByIdRequest) returns (User) {
+        option (google.api.http) = {
+            get: "/user/{id}"
+        };
+    }
+
+    rpc GetUserList(GetUserListRequest) returns (GetUserListResponse) {
+        option (google.api.http) = {
+            get: "/user"
+        };
+    }
+}
