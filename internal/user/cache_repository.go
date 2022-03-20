@@ -10,7 +10,7 @@ type cacheRepository struct {
 	sync.RWMutex
 
 	users    []*User
-	usersMap map[uint64]int
+	usersMap map[uint64]*User
 }
 
 func initCacheRepository(users []*User) cache {
@@ -32,14 +32,12 @@ func (c *cacheRepository) Add(ctx context.Context, u *User) error {
 }
 
 func (c *cacheRepository) Update(ctx context.Context, u *User) error {
-	if _, e := c.usersMap[u.Id]; e {
-		if err := c.DeleteById(ctx, u.Id); err != nil {
-			return err
-		}
-	}
+	c.RWMutex.Lock()
+	defer c.RWMutex.Unlock()
 
-	if err := c.Add(ctx, u); err != nil {
-		return err
+	if k, err := c.getStorageKeyById(u.Id); err == nil {
+		c.users[k] = u
+		c.usersMap[u.Id] = u
 	}
 
 	return nil
@@ -49,8 +47,9 @@ func (c *cacheRepository) DeleteById(ctx context.Context, id uint64) error {
 	c.RWMutex.Lock()
 	defer c.RWMutex.Unlock()
 
-	if k, e := c.usersMap[id]; e {
-		c.delete(k)
+	// видится мне, что это плохо + долго
+	if k, err := c.getStorageKeyById(id); err == nil {
+		c.deleteFromStorageByKey(k)
 		delete(c.usersMap, id)
 	}
 
@@ -61,14 +60,17 @@ func (c *cacheRepository) GetById(ctx context.Context, id uint64) (*User, error)
 	c.RWMutex.RLock()
 	defer c.RWMutex.RUnlock()
 
-	if k, e := c.usersMap[id]; e {
-		return c.users[k], nil
+	if u, e := c.usersMap[id]; e {
+		return u, nil
 	}
 
 	return nil, errors.New("user not found in cache")
 }
 
 func (c *cacheRepository) GetList(ctx context.Context) ([]*User, error) {
+	c.RWMutex.RLock()
+	defer c.RWMutex.RUnlock()
+
 	return c.users, nil
 }
 
@@ -84,7 +86,7 @@ func (c *cacheRepository) Reset(ctx context.Context, users []*User) error {
 
 func (c *cacheRepository) add(u *User) {
 	c.users = append(c.users, u)
-	c.usersMap[u.Id] = len(c.users) - 1
+	c.usersMap[u.Id] = u
 }
 
 func (c *cacheRepository) addList(users []*User) {
@@ -93,13 +95,23 @@ func (c *cacheRepository) addList(users []*User) {
 	}
 }
 
-func (c *cacheRepository) delete(k int) {
-	c.users[k] = c.users[len(c.users)-1]
-	c.users[len(c.users)-1] = nil
-	c.users = c.users[:len(c.users)-1]
-}
-
 func (c *cacheRepository) clean() {
 	c.users = make([]*User, 0)
-	c.usersMap = make(map[uint64]int, 0)
+	c.usersMap = make(map[uint64]*User, 0)
+}
+
+func (c *cacheRepository) getStorageKeyById(id uint64) (int, error) {
+	for k, u := range c.users {
+		if u.Id == id {
+			return k, nil
+		}
+	}
+
+	return 0, errors.New("user not found")
+}
+
+func (c *cacheRepository) deleteFromStorageByKey(k int) {
+	copy(c.users[k:], c.users[k+1:])
+	c.users[len(c.users)-1] = nil
+	c.users = c.users[:len(c.users)-1]
 }

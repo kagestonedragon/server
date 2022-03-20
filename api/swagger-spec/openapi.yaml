@@ -4,9 +4,9 @@ info:
   title: echo
   version: '0.3.1'
 servers:
-  - url: http://echo.kube.dev.gradefactor.ru/ #ToDo service address
+  - url: http://echo/ #ToDo service address
     description: Optional server description, e.g. Main (Dev) server
-  - url: https://echo.kube.dev.gradefactor.ru/ #ToDo service address
+  - url: https://echo/ #ToDo service address
     description: Optional server description, e.g. Main (Prod) server
 
 paths:
@@ -110,6 +110,157 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  '/user':
+    post:
+      tags:
+        - UserService
+      operationId: UserService.AddUser
+      requestBody:
+        description: AddUser
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddUserRequest'
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - UserService
+      operationId: UserService.GetUserList
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetUserListResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  '/user/{id}':
+    put:
+      tags:
+        - UserService
+      operationId: UserService.UpdateUser
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      parameters:
+        - in: path
+          name: id
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateUserResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      tags:
+        - UserService
+      operationId: UserService.DeleteUserById
+      parameters:
+        - in: path
+          name: id
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteUserByIdResponse'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags:
+        - UserService
+      operationId: UserService.GetUserById
+      parameters:
+        - in: path
+          name: id
+          required: false
+          schema:
+            type: integer
+        - in: path
+          name: id
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     Error:
@@ -117,6 +268,17 @@ components:
       properties:
         error:
           type: string
+    AddUserRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        active:
+          type: boolean
+    DeleteUserByIdRequest:
+      type: object
+    DeleteUserByIdResponse:
+      type: object
     Echo:
       type: object
       properties:
@@ -137,6 +299,14 @@ components:
             $ref: '#/components/schemas/Echo'
         err:
           type: string
+    GetUserByIdRequest:
+      type: object
+    GetUserListRequest:
+      type: object
+    GetUserListResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/User'
     LivenessRequest:
       type: object
     LivenessResponse:
@@ -145,6 +315,17 @@ components:
       type: object
     ReadinessResponse:
       type: object
+    UpdateUserResponse:
+      type: object
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        active:
+          type: boolean
     VersionRequest:
       type: object
     VersionResponse:
