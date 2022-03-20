@@ -10,7 +10,7 @@ type cacheRepository struct {
 	sync.RWMutex
 
 	users    []*User
-	usersMap map[uint64]*User
+	usersMap map[uint64]int
 }
 
 func initCacheRepository(users []*User) cache {
@@ -31,7 +31,6 @@ func (c *cacheRepository) Add(ctx context.Context, u *User) error {
 	return nil
 }
 
-// TODO не работает нормально из-за DeleteById
 func (c *cacheRepository) Update(ctx context.Context, u *User) error {
 	if _, e := c.usersMap[u.Id]; e {
 		if err := c.DeleteById(ctx, u.Id); err != nil {
@@ -46,9 +45,14 @@ func (c *cacheRepository) Update(ctx context.Context, u *User) error {
 	return nil
 }
 
-// TODO не работает
 func (c *cacheRepository) DeleteById(ctx context.Context, id uint64) error {
-	delete(c.usersMap, id)
+	c.RWMutex.Lock()
+	defer c.RWMutex.Unlock()
+
+	if k, e := c.usersMap[id]; e {
+		c.delete(k)
+		delete(c.usersMap, id)
+	}
 
 	return nil
 }
@@ -57,8 +61,8 @@ func (c *cacheRepository) GetById(ctx context.Context, id uint64) (*User, error)
 	c.RWMutex.RLock()
 	defer c.RWMutex.RUnlock()
 
-	if u, e := c.usersMap[id]; e {
-		return u, nil
+	if k, e := c.usersMap[id]; e {
+		return c.users[k], nil
 	}
 
 	return nil, errors.New("user not found in cache")
@@ -80,7 +84,7 @@ func (c *cacheRepository) Reset(ctx context.Context, users []*User) error {
 
 func (c *cacheRepository) add(u *User) {
 	c.users = append(c.users, u)
-	c.usersMap[u.Id] = u
+	c.usersMap[u.Id] = len(c.users) - 1
 }
 
 func (c *cacheRepository) addList(users []*User) {
@@ -89,7 +93,13 @@ func (c *cacheRepository) addList(users []*User) {
 	}
 }
 
+func (c *cacheRepository) delete(k int) {
+	c.users[k] = c.users[len(c.users)-1]
+	c.users[len(c.users)-1] = nil
+	c.users = c.users[:len(c.users)-1]
+}
+
 func (c *cacheRepository) clean() {
 	c.users = make([]*User, 0)
-	c.usersMap = make(map[uint64]*User, 0)
+	c.usersMap = make(map[uint64]int, 0)
 }

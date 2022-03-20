@@ -47,9 +47,10 @@ func (p *postgreSqlRepository) Update(ctx context.Context, u *User) error {
 
 	defer conn.Release()
 
-	_, err = conn.Exec(ctx, UpdateUserSqlTemplate, u.Name, u.Active, u.Id)
-	if err != nil {
+	if r, err := conn.Exec(ctx, UpdateUserSqlTemplate, u.Name, u.Active, u.Id); err != nil {
 		return errors.Wrap(err, "update user in database")
+	} else if r.RowsAffected() == 0 {
+		return errors.New("user not found")
 	}
 
 	return nil
@@ -63,8 +64,10 @@ func (p *postgreSqlRepository) DeleteById(ctx context.Context, id uint64) error 
 
 	defer conn.Release()
 
-	if _, err = conn.Exec(ctx, DeleteUserByIdSqlTemplate, id); err != nil {
+	if r, err := conn.Exec(ctx, DeleteUserByIdSqlTemplate, id); err != nil {
 		return errors.Wrap(err, "delete user from database")
+	} else if r.RowsAffected() == 0 {
+		return errors.New("user not found")
 	}
 
 	return nil

@@ -80,7 +80,6 @@ $ migrate -source file://migrations -database "postgres://user:password@localhos
 Запуск
 
 ```
-postgres://user:password@localhost:5432/db?sslmode=disable
 ./bin/echo-service \
 --postgres.master.host="127.0.0.1" \
 --postgres.master.port=5432 \
