@@ -22,7 +22,9 @@ func NewCacheableRepository(ctx context.Context, db Repository, d time.Duration)
 		cache: initCacheRepository(users),
 	}
 
-	go r.runCacheCleaner(ctx, d)
+	if d > 0 {
+		go r.runCacheCleaner(ctx, d)
+	}
 
 	return r, nil
 }

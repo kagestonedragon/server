@@ -28,7 +28,6 @@ func (s *userService) AddUser(ctx context.Context, req *AddUserRequest) (resp *U
 	return s.convertInternalUserToExternal(u), nil
 }
 
-// тут бы хотелось иметь PATCH, а не PUT
 func (s *userService) UpdateUser(ctx context.Context, req *User) (resp *UpdateUserResponse, err error) {
 	if err := s.r.Update(ctx, s.convertExternalUserToInternal(req)); err != nil {
 		return nil, err
