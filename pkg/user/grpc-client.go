@@ -5,7 +5,7 @@ import (
 	"context"
 	"errors"
 
-	pb "git.repo.services.lenvendo.ru/grade-factor/echo/internal/echopb"
+	pb "github.com/kagestonedragon/server/internal/echopb"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/tracing/opentracing"
 	grpctransport "github.com/go-kit/kit/transport/grpc"

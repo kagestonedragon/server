@@ -2,7 +2,7 @@ package echo
 
 import (
 	"context"
-	"git.repo.services.lenvendo.ru/grade-factor/echo/internal/repository/echo"
+	"github.com/kagestonedragon/server/internal/repository/echo"
 )
 
 type echoService struct {

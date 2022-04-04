@@ -6,8 +6,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"git.repo.services.lenvendo.ru/grade-factor/echo/tools/logging"
-	"git.repo.services.lenvendo.ru/grade-factor/echo/tools/tracing"
+	"github.com/kagestonedragon/server/tools/logging"
+	"github.com/kagestonedragon/server/tools/tracing"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/tracing/opentracing"
 	httptransport "github.com/go-kit/kit/transport/http"

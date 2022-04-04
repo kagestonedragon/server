@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"git.repo.services.lenvendo.ru/grade-factor/echo/configs"
+	"github.com/kagestonedragon/server/configs"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/pkg/errors"

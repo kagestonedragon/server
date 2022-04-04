@@ -2,7 +2,7 @@ package user
 
 import (
 	"context"
-	"git.repo.services.lenvendo.ru/grade-factor/echo/internal/db/postgres"
+	"github.com/kagestonedragon/server/internal/db/postgres"
 	"github.com/pkg/errors"
 )
 

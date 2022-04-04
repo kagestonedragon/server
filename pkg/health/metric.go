@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	tool "git.repo.services.lenvendo.ru/grade-factor/echo/tools/metrics"
+	tool "github.com/kagestonedragon/server/tools/metrics"
 	"github.com/go-kit/kit/metrics"
 )
 

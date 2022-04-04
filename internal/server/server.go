@@ -5,10 +5,10 @@ import (
 	"sort"
 	"time"
 
-	"git.repo.services.lenvendo.ru/grade-factor/echo/configs"
 	"github.com/go-kit/kit/log"
 	grpctransport "github.com/go-kit/kit/transport/grpc"
 	"github.com/gorilla/mux"
+	"github.com/kagestonedragon/server/configs"
 	"google.golang.org/grpc"
 )
 

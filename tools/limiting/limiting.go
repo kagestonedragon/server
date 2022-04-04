@@ -5,7 +5,7 @@ import (
 	"context"
 	"net/http"
 
-	"git.repo.services.lenvendo.ru/grade-factor/echo/tools/logging"
+	"github.com/kagestonedragon/server/tools/logging"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"golang.org/x/time/rate"

@@ -2,7 +2,7 @@ package user
 
 import (
 	"context"
-	"git.repo.services.lenvendo.ru/grade-factor/echo/internal/user"
+	"github.com/kagestonedragon/server/internal/user"
 )
 
 type userService struct {

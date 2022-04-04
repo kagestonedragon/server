@@ -2,7 +2,7 @@ FROM golang:1.16-alpine AS build
 
 ENV APP=./cmd/app
 ENV BIN=/bin/echo
-ENV PATH_ROJECT=${GOPATH}/src/git.repo.services.lenvendo.ru/grade-factor/echo
+ENV PATH_ROJECT=${GOPATH}/src/github.com/kagestonedragon/server
 ENV GO111MODULE=on
 ENV GOSUMDB=off
 ENV GOFLAGS=-mod=vendor

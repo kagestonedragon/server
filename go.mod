@@ -1,6 +1,6 @@
-module git.repo.services.lenvendo.ru/grade-factor/echo
+module github.com/kagestonedragon/server
 
-go 1.16
+go 1.17
 
 require (
 	git.repo.services.lenvendo.ru/grade-factor/api v0.0.0-20210908140242-deef8c82050b
