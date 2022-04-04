@@ -8,7 +8,7 @@ package echopb
 
 import (
 	context "context"
-	_ "git.repo.services.lenvendo.ru/grade-factor/api/service"
+	_ "github.com/kagestonedragon/annotations_api/service"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"

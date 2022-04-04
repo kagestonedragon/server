@@ -3,7 +3,7 @@ syntax = "proto3";
 package dev.service;
 import "google/protobuf/struct.proto";
 
-option go_package = "git.repo.services.lenvendo.ru/grade-factor/api/service";
+option go_package = "github.com/kagestonedragon/annotations_api/service";
 
 message Levels {
   Enabled http = 1;
